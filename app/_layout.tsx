@@ -1,56 +1,40 @@
-import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import {
+  Slot,
+  useRouter,
+  useSegments,
+  useRootNavigationState,
+} from "expo-router";
+import { useEffect } from "react";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+function InitialLayout() {
+  const { user, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    // Se estiver carregando ou o roteador não estiver pronto ele para
+    if (isLoading || !rootNavigationState?.key) return;
 
-  if (!loaded) {
-    return null;
-  }
+    const inAppGroup = segments[0] === "(app)";
 
-  return <RootLayoutNav />;
+    setTimeout(() => {
+      if (user && !inAppGroup) {
+        router.replace("/(app)/dashboard");
+      } else if (!user && inAppGroup) {
+        router.replace("/");
+      }
+    }, 10);
+  }, [user, segments, isLoading, rootNavigationState?.key]);
+
+  return <Slot />;
 }
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <AuthProvider>
+      <InitialLayout />
+    </AuthProvider>
   );
 }
