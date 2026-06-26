@@ -1,11 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
-  useContext,
-  useState,
   ReactNode,
+  useContext,
   useEffect,
+  useState,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface AuthContextData {
   user: any;
@@ -19,25 +19,20 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
 
-  // 1. Iniciamos o loading como TRUE para segurar o app na tela preta/splash
-  // enquanto procuramos o token no fundo da gaveta.
   const [isLoading, setIsLoading] = useState(true);
 
-  // 2. Este useEffect roda automaticamente quando o app abre
   useEffect(() => {
     async function carregarDadosSalvos() {
       try {
         const storedToken = await AsyncStorage.getItem("@App:token");
         const storedUser = await AsyncStorage.getItem("@App:user");
 
-        // Se achou o token e o usuário, faz o login silencioso!
         if (storedToken && storedUser) {
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
         console.error("Erro ao recuperar os dados de login:", error);
       } finally {
-        // 3. Terminou de procurar? Libera a tela.
         setIsLoading(false);
       }
     }
@@ -54,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await AsyncStorage.removeItem("@App:token");
     await AsyncStorage.removeItem("@App:user");
-    setUser(null); // Isso aqui avisa o roteador para expulsar o usuário para o Login
+    setUser(null);
   }
 
   return (
